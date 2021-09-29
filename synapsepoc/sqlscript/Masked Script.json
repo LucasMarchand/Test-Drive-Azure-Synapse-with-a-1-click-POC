@@ -1,0 +1,17 @@
+{
+	"name": "Masked Script",
+	"properties": {
+		"content": {
+			"query": "CREATE TABLE Membership \n\n(MemberID int IDENTITY, \n\n FirstName varchar(100) MASKED WITH (FUNCTION = 'partial(1,\"XXXXXXX\",0)') NULL, \n\n LastName varchar(100) NOT NULL, \n\n Phone varchar(12) MASKED WITH (FUNCTION = 'default()') NULL, \n\n Email varchar(100) MASKED WITH (FUNCTION = 'email()') NULL); \n\n \n\n--Insert sample data in the table \n\nINSERT Membership VALUES ('Roberto', 'Tamburello', '555.123.4567', 'RTamburello@contoso.com'); \n\nINSERT Membership VALUES ('Janice', 'Galvin', '555.123.4568', 'JGalvin@contoso.com.co'); \n\nINSERT Membership VALUES ('Zheng', 'Mu', '555.123.4569', 'ZMu@contoso.net'); \n\nSELECT * FROM Membership; \n\n \n\n-- A new user is created and granted SELECT permission on the table.  \n\n-- Queries executed as the TestUser view masked data. \n\nCREATE USER TestUser WITHOUT LOGIN; \n\nGRANT SELECT ON Membership TO TestUser; \n\n \n\n--Test user permissions \n\nEXECUTE AS USER = 'TestUser'; \n\nSELECT * FROM Membership; \n\nREVERT; \n\n \n\n--The following example adds a masking function to the LastName column \n\nALTER TABLE Membership \n\nALTER COLUMN LastName ADD MASKED WITH (FUNCTION = 'partial(2,\"XXX\",0)'); \n\n \n\n--The following example changes a masking function on the LastName column \n\nALTER TABLE Membership \n\nALTER COLUMN LastName varchar(100) MASKED WITH (FUNCTION = 'default()'); \n\n \n\n--Granting the UNMASK permission allows TestUser to see the data unmasked \n\nGRANT UNMASK TO TestUser; \n\nEXECUTE AS USER = 'TestUser'; \n\nSELECT * FROM Membership; \n\nREVERT; \n\n \n\n-- Removing the UNMASK permission \n\nREVOKE UNMASK TO TestUser; \n\n \n\n-- The following statement drops the mask on the LastName column \n\n-- created in the previous example \n\nALTER TABLE Membership \n\nALTER COLUMN LastName DROP MASKED; ",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "llkqqcnd5pm6cvcapocws1p1",
+				"poolName": "llkqqcnd5pm6cvcapocws1p1"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
