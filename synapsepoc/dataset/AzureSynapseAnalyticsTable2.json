@@ -1,0 +1,42 @@
+{
+	"name": "AzureSynapseAnalyticsTable2",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "TripFaresSynapseAnalyticsLinkedService",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"SynapseWorkspaceName": "llkqqcnd5pm6cvcapocws1.database.windows.net",
+				"SQLDedicatedPoolName": "llkqqcnd5pm6cvcapocws1p1",
+				"keyVaultName": "kvllkqqcnd5pm6cvcapoc",
+				"SQLLoginUsername": "sqladmin"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDWTable",
+		"schema": [
+			{
+				"name": "DepartmentID",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "GroupName",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ModifiedDate",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Department"
+		}
+	}
+}
