@@ -22,7 +22,7 @@
 					},
 					"sink": {
 						"type": "SqlDWSink",
-						"allowCopyCommand": true
+						"sqlWriterUseTableLock": false
 					},
 					"enableStaging": false,
 					"translator": {
@@ -31,44 +31,57 @@
 							{
 								"source": {
 									"name": "DepartmentID",
-									"type": "Int16"
+									"type": "Int16",
+									"physicalType": "smallint"
 								},
 								"sink": {
 									"name": "DepartmentID",
-									"type": "Int16"
+									"type": "Int16",
+									"physicalType": "smallint"
 								}
 							},
 							{
 								"source": {
 									"name": "Name",
-									"type": "String"
+									"type": "String",
+									"physicalType": "nvarchar"
 								},
 								"sink": {
 									"name": "Name",
-									"type": "String"
+									"type": "String",
+									"physicalType": "nvarchar"
 								}
 							},
 							{
 								"source": {
 									"name": "GroupName",
-									"type": "String"
+									"type": "String",
+									"physicalType": "nvarchar"
 								},
 								"sink": {
 									"name": "GroupName",
-									"type": "String"
+									"type": "String",
+									"physicalType": "nvarchar"
 								}
 							},
 							{
 								"source": {
 									"name": "ModifiedDate",
-									"type": "DateTime"
+									"type": "DateTime",
+									"physicalType": "datetime"
 								},
 								"sink": {
 									"name": "ModifiedDate",
-									"type": "DateTime"
+									"type": "DateTime",
+									"physicalType": "datetime"
 								}
 							}
-						]
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
 					}
 				},
 				"inputs": [
