@@ -1,0 +1,17 @@
+{
+	"name": "Create Departament",
+	"properties": {
+		"content": {
+			"query": "CREATE TABLE [Department]( \n    [DepartmentID] [SMALLINT], \n    [Name] NVARCHAR(50), \n    [GroupName] NVARCHAR(50), \n    [ModifiedDate] [DATETIME] \n) ",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "llkqqcnd5pm6cvcapocws1p1",
+				"poolName": "llkqqcnd5pm6cvcapocws1p1"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
