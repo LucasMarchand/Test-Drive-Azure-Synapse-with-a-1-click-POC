@@ -8,6 +8,12 @@
 		"TripFaresSynapseAnalyticsLinkedService_connectionString": {
 			"value": ""
 		},
+		"SqlServerOnPremise_connectionString": {
+			"value": ""
+		},
+		"SqlServerOnPremise_password": {
+			"value": ""
+		},
 		"HttpServerTripDataLinkedService_properties_typeProperties_url": {
 			"value": "https://raw.githubusercontent.com/Azure/Test-Drive-Azure-Synapse-with-a-1-click-POC/main/tripDataAndFaresCSV/trip-data.csv"
 		},
@@ -19,6 +25,9 @@
 		},
 		"keyVaultLinkedservice_properties_typeProperties_baseUrl": {
 			"value": "@{concat('https://',linkedService().keyVaultName,'.vault.azure.net/')}"
+		},
+		"SqlServerOnPremise_properties_typeProperties_userName": {
+			"value": "FORTALEZA\\F2103121"
 		}
 	}
 }
