@@ -7,10 +7,6 @@
 			"metadata": "Nome do Workspace",
 			"defaultValue": "llkqqcnd5pm6cvcapocws1"
 		},
-		"TripFaresSynapseAnalyticsLinkedService_connectionString": {
-			"type": "secureString",
-			"metadata": "Cadeia de caracteres segura para 'connectionString' de 'TripFaresSynapseAnalyticsLinkedService'"
-		},
 		"SqlServerOnPremise_connectionString": {
 			"type": "secureString",
 			"metadata": "Cadeia de caracteres segura para 'connectionString' de 'SqlServerOnPremise'"
@@ -18,6 +14,10 @@
 		"SqlServerOnPremise_password": {
 			"type": "secureString",
 			"metadata": "Cadeia de caracteres segura para 'password' de 'SqlServerOnPremise'"
+		},
+		"TripFaresSynapseAnalyticsLinkedService_connectionString": {
+			"type": "secureString",
+			"metadata": "Cadeia de caracteres segura para 'connectionString' de 'TripFaresSynapseAnalyticsLinkedService'"
 		},
 		"HttpServerTripDataLinkedService_properties_typeProperties_url": {
 			"type": "string",
@@ -27,6 +27,10 @@
 			"type": "string",
 			"defaultValue": "https://raw.githubusercontent.com/Azure/Test-Drive-Azure-Synapse-with-a-1-click-POC/main/tripDataAndFaresCSV/fares-data.csv"
 		},
+		"SqlServerOnPremise_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "FORTALEZA\\F2103121"
+		},
 		"TripFaresDataLakeStorageLinkedService_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "@{concat('https://',linkedService().datalakeAccountName,'.dfs.core.windows.net')}"
@@ -34,16 +38,126 @@
 		"keyVaultLinkedservice_properties_typeProperties_baseUrl": {
 			"type": "string",
 			"defaultValue": "@{concat('https://',linkedService().keyVaultName,'.vault.azure.net/')}"
-		},
-		"SqlServerOnPremise_properties_typeProperties_userName": {
-			"type": "string",
-			"defaultValue": "FORTALEZA\\F2103121"
 		}
 	},
 	"variables": {
 		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "SqlDWSink"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "DepartmentID",
+											"type": "Int16",
+											"physicalType": "smallint"
+										},
+										"sink": {
+											"name": "DepartmentID",
+											"type": "Int16",
+											"physicalType": "smallint"
+										}
+									},
+									{
+										"source": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "Name",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "GroupName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										},
+										"sink": {
+											"name": "GroupName",
+											"type": "String",
+											"physicalType": "nvarchar"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "SqlServerHumanResourceDepartament",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "AzureSynapseAnalyticsTable2",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/SqlServerHumanResourceDepartament')]",
+				"[concat(variables('workspaceId'), '/datasets/AzureSynapseAnalyticsTable2')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('workspaceName'), '/TripFaresDataPipeline')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
@@ -631,6 +745,53 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/AzureSynapseAnalyticsTable2')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TripFaresSynapseAnalyticsLinkedService",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"SynapseWorkspaceName": "llkqqcnd5pm6cvcapocws1.database.windows.net",
+						"SQLDedicatedPoolName": "llkqqcnd5pm6cvcapocws1p1",
+						"keyVaultName": "kvllkqqcnd5pm6cvcapoc",
+						"SQLLoginUsername": "sqladmin"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [
+					{
+						"name": "DepartmentID",
+						"type": "smallint",
+						"precision": 5
+					},
+					{
+						"name": "Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "GroupName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Department"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/TripFaresSynapseAnalyticsLinkedService')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/AzureSynapseAnalyticsTripsData')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -680,6 +841,47 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/TripFaresSynapseAnalyticsLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SqlServerHumanResourceDepartament')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SqlServerOnPremise",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "DepartmentID",
+						"type": "smallint",
+						"precision": 5
+					},
+					{
+						"name": "Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "GroupName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "HumanResources",
+					"table": "Department"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/SqlServerOnPremise')]"
 			]
 		},
 		{
@@ -1114,6 +1316,44 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/PowerBiOnSynapseDemo')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "PowerBIWorkspace",
+				"typeProperties": {
+					"workspaceID": "f61cb40a-6488-4b5a-9779-b2c826549db9",
+					"tenantID": "6c115cc4-d107-4635-81cd-0617e0344073"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SqlServerOnPremise')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"connectionString": "[parameters('SqlServerOnPremise_connectionString')]",
+					"userName": "[parameters('SqlServerOnPremise_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('SqlServerOnPremise_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "IntegrationRuntime1",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/IntegrationRuntime1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/TripFaresDataLakeStorageLinkedService')]",
 			"type": "Microsoft.Synapse/workspaces/linkedServices",
 			"apiVersion": "2019-06-01-preview",
@@ -1320,6 +1560,66 @@
 			"properties": {
 				"type": "ManagedIdentity",
 				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Create Departament')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "CREATE TABLE [Department]( \n    [DepartmentID] [SMALLINT], \n    [Name] NVARCHAR(50), \n    [GroupName] NVARCHAR(50), \n    [ModifiedDate] [DATETIME] \n) ",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
+						"poolName": "llkqqcnd5pm6cvcapocws1p1"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Masked Script')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "CREATE TABLE Membership \n(MemberID int IDENTITY, \n FirstName varchar(100) MASKED WITH (FUNCTION = 'partial(1,\"XXXXXXX\",0)') NULL, \n LastName varchar(100) NOT NULL, \n Phone varchar(12) MASKED WITH (FUNCTION = 'default()') NULL, \n Email varchar(100) MASKED WITH (FUNCTION = 'email()') NULL); \n\n\n--Insert sample data in the table \nINSERT Membership VALUES ('Roberto', 'Tamburello', '555.123.4567', 'RTamburello@contoso.com'); \nINSERT Membership VALUES ('Janice', 'Galvin', '555.123.4568', 'JGalvin@contoso.com.co'); \nINSERT Membership VALUES ('Zheng', 'Mu', '555.123.4569', 'ZMu@contoso.net'); \nSELECT * FROM Membership; \n\n\n-- A new user is created and granted SELECT permission on the table.  \n-- Queries executed as the TestUser view masked data. \n\n-- Connect to MASTER\nCREATE LOGIN User1 WITH PASSWORD = 'teste@123';\n-- Connect to DATABASE\nCREATE USER User1 WITHOUT LOGIN; \nGRANT SELECT ON Membership TO User1; \n\n\n--Test user permissions \nEXECUTE AS USER = 'User1'; \nSELECT * FROM Membership; \nREVERT; \n\n\n--The following example adds a masking function to the LastName column \nALTER TABLE Membership \nALTER COLUMN LastName ADD MASKED WITH (FUNCTION = 'partial(2,\"XXX\",0)'); \n \n\n--The following example changes a masking function on the LastName column \nALTER TABLE Membership \nALTER COLUMN LastName varchar(100) MASKED WITH (FUNCTION = 'default()'); \n \n\n--Granting the UNMASK permission allows TestUser to see the data unmasked \nGRANT UNMASK TO User1; \nEXECUTE AS USER = 'User1'; \nSELECT * FROM Membership; \nREVERT; \n\n\n-- Removing the UNMASK permission \nREVOKE UNMASK TO User1; \n\n\n-- The following statement drops the mask on the LastName column \n-- created in the previous example \nALTER TABLE Membership \nALTER COLUMN LastName DROP MASKED; \n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
+						"poolName": "llkqqcnd5pm6cvcapocws1p1"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Row Level Security')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "--Create three user accounts that will demonstrate different access  \n-- capabilities \n\n-- Connect to MASTER\nCREATE LOGIN Manager WITH PASSWORD = 'teste@123';\n-- Connect to DATABASE\nCREATE USER Manager FROM LOGIN Manager; \n\n\n--Create a table to hold data \nCREATE TABLE Sales \n( \n    OrderID int, \n    SalesRep sysname, \n    Product varchar(10), \n    Qty int \n); \n\n--Insert data into table with six rows of data,  \n--showing three orders for each sales representative \nINSERT INTO Sales VALUES (1, 'Sales1', 'Valve', 5); \nINSERT INTO Sales VALUES (2, 'Sales1', 'Wheel', 2); \nINSERT INTO Sales VALUES (3, 'Sales1', 'Valve', 4); \nINSERT INTO Sales VALUES (4, 'Sales2', 'Bracket', 2); \nINSERT INTO Sales VALUES (5, 'Sales2', 'Wheel', 5); \nINSERT INTO Sales VALUES (6, 'Sales2', 'Seat', 5); \n\n-- View the 6 rows in the table \nSELECT * FROM Sales; \n \n--Grant read access on the table to each of the users \nGRANT SELECT ON Sales TO Manager; \nGRANT SELECT ON Sales TO User1; \n \n--Create a new schema, and an inline table-valued function. \n--The function returns 1 when a row in the SalesRep column is the same  \n--as the user executing the query (@SalesRep = USER_NAME()) or  \n--if the user executing the query is the Manager user  \n--(USER_NAME() = 'Manager') \nEXEC('CREATE SCHEMA Security'); \nGO \n\n--Select the code for creating the function and run \nCREATE FUNCTION Security.fn_securitypredicate(@SalesRep AS sysname) \n    RETURNS TABLE \nWITH SCHEMABINDING \nAS \n    RETURN SELECT 1 AS fn_securitypredicate_result \nWHERE @SalesRep = USER_NAME() OR USER_NAME() = 'User1' \n\nGO \n\n--Create a security policy adding the function as a filter predicate.  \n--The state must be set to ON to enable the policy. \nCREATE SECURITY POLICY SalesFilter \nADD FILTER PREDICATE Security.fn_securitypredicate(SalesRep) \nON dbo.Sales \nWITH (STATE = ON); \n \n\n--Allow SELECT permissions to the fn_securitypredicate function \nGRANT SELECT ON security.fn_securitypredicate TO Manager; \nGRANT SELECT ON security.fn_securitypredicate TO User1; \n\n--Test the filtering predicate, by selected from the  \n-- Sales table as each user \nEXECUTE AS USER = 'User1'; \nSELECT * FROM Sales; \nREVERT; \n\nEXECUTE AS USER = 'Manager'; \nSELECT * FROM Sales; \nREVERT; \n \n\n--Alter the security policy to disable the policy \nALTER SECURITY POLICY SalesFilter \nWITH (STATE = OFF); \n\n--Connect to the SQL database to clean up resources \nDROP USER User1; \nDROP USER Manager; \n\n \nDROP SECURITY POLICY SalesFilter; \nDROP TABLE Sales; \nDROP FUNCTION Security.fn_securitypredicate; \nDROP SCHEMA Security; \n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
+						"poolName": "llkqqcnd5pm6cvcapocws1p1"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
 			},
 			"dependsOn": []
 		},
@@ -1876,307 +2176,6 @@
 			"type": "Microsoft.Synapse/workspaces/managedVirtualNetworks",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/PowerBiOnSynapseDemo')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"type": "PowerBIWorkspace",
-				"typeProperties": {
-					"workspaceID": "f61cb40a-6488-4b5a-9779-b2c826549db9",
-					"tenantID": "6c115cc4-d107-4635-81cd-0617e0344073"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/SqlServerOnPremise')]",
-			"type": "Microsoft.Synapse/workspaces/linkedServices",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"annotations": [],
-				"type": "SqlServer",
-				"typeProperties": {
-					"connectionString": "[parameters('SqlServerOnPremise_connectionString')]",
-					"userName": "[parameters('SqlServerOnPremise_properties_typeProperties_userName')]",
-					"password": {
-						"type": "SecureString",
-						"value": "[parameters('SqlServerOnPremise_password')]"
-					}
-				},
-				"connectVia": {
-					"referenceName": "IntegrationRuntime1",
-					"type": "IntegrationRuntimeReference"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/integrationRuntimes/IntegrationRuntime1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Create Departament')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"content": {
-					"query": "CREATE TABLE [Department]( \n    [DepartmentID] [SMALLINT], \n    [Name] NVARCHAR(50), \n    [GroupName] NVARCHAR(50), \n    [ModifiedDate] [DATETIME] \n) ",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
-						"poolName": "llkqqcnd5pm6cvcapocws1p1"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/AzureSynapseAnalyticsTable2')]",
-			"type": "Microsoft.Synapse/workspaces/datasets",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "TripFaresSynapseAnalyticsLinkedService",
-					"type": "LinkedServiceReference",
-					"parameters": {
-						"SynapseWorkspaceName": "llkqqcnd5pm6cvcapocws1.database.windows.net",
-						"SQLDedicatedPoolName": "llkqqcnd5pm6cvcapocws1p1",
-						"keyVaultName": "kvllkqqcnd5pm6cvcapoc",
-						"SQLLoginUsername": "sqladmin"
-					}
-				},
-				"annotations": [],
-				"type": "AzureSqlDWTable",
-				"schema": [
-					{
-						"name": "DepartmentID",
-						"type": "smallint",
-						"precision": 5
-					},
-					{
-						"name": "Name",
-						"type": "nvarchar"
-					},
-					{
-						"name": "GroupName",
-						"type": "nvarchar"
-					},
-					{
-						"name": "ModifiedDate",
-						"type": "datetime",
-						"precision": 23,
-						"scale": 3
-					}
-				],
-				"typeProperties": {
-					"schema": "dbo",
-					"table": "Department"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/TripFaresSynapseAnalyticsLinkedService')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "Copy data1",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "7.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "SqlServerSource",
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"sink": {
-								"type": "SqlDWSink",
-								"sqlWriterUseTableLock": false
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"name": "DepartmentID",
-											"type": "Int16",
-											"physicalType": "smallint"
-										},
-										"sink": {
-											"name": "DepartmentID",
-											"type": "Int16",
-											"physicalType": "smallint"
-										}
-									},
-									{
-										"source": {
-											"name": "Name",
-											"type": "String",
-											"physicalType": "nvarchar"
-										},
-										"sink": {
-											"name": "Name",
-											"type": "String",
-											"physicalType": "nvarchar"
-										}
-									},
-									{
-										"source": {
-											"name": "GroupName",
-											"type": "String",
-											"physicalType": "nvarchar"
-										},
-										"sink": {
-											"name": "GroupName",
-											"type": "String",
-											"physicalType": "nvarchar"
-										}
-									},
-									{
-										"source": {
-											"name": "ModifiedDate",
-											"type": "DateTime",
-											"physicalType": "datetime"
-										},
-										"sink": {
-											"name": "ModifiedDate",
-											"type": "DateTime",
-											"physicalType": "datetime"
-										}
-									}
-								],
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "SqlServerHumanResourceDepartament",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "AzureSynapseAnalyticsTable2",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/SqlServerHumanResourceDepartament')]",
-				"[concat(variables('workspaceId'), '/datasets/AzureSynapseAnalyticsTable2')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/SqlServerHumanResourceDepartament')]",
-			"type": "Microsoft.Synapse/workspaces/datasets",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "SqlServerOnPremise",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "SqlServerTable",
-				"schema": [
-					{
-						"name": "DepartmentID",
-						"type": "smallint",
-						"precision": 5
-					},
-					{
-						"name": "Name",
-						"type": "nvarchar"
-					},
-					{
-						"name": "GroupName",
-						"type": "nvarchar"
-					},
-					{
-						"name": "ModifiedDate",
-						"type": "datetime",
-						"precision": 23,
-						"scale": 3
-					}
-				],
-				"typeProperties": {
-					"schema": "HumanResources",
-					"table": "Department"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/linkedServices/SqlServerOnPremise')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Masked Script')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"content": {
-					"query": "CREATE TABLE Membership \n\n(MemberID int IDENTITY, \n\n FirstName varchar(100) MASKED WITH (FUNCTION = 'partial(1,\"XXXXXXX\",0)') NULL, \n\n LastName varchar(100) NOT NULL, \n\n Phone varchar(12) MASKED WITH (FUNCTION = 'default()') NULL, \n\n Email varchar(100) MASKED WITH (FUNCTION = 'email()') NULL); \n\n \n\n--Insert sample data in the table \n\nINSERT Membership VALUES ('Roberto', 'Tamburello', '555.123.4567', 'RTamburello@contoso.com'); \n\nINSERT Membership VALUES ('Janice', 'Galvin', '555.123.4568', 'JGalvin@contoso.com.co'); \n\nINSERT Membership VALUES ('Zheng', 'Mu', '555.123.4569', 'ZMu@contoso.net'); \n\nSELECT * FROM Membership; \n\n \n\n-- A new user is created and granted SELECT permission on the table.  \n\n-- Queries executed as the TestUser view masked data. \n\nCREATE USER TestUser WITHOUT LOGIN; \n\nGRANT SELECT ON Membership TO TestUser; \n\n \n\n--Test user permissions \n\nEXECUTE AS USER = 'TestUser'; \n\nSELECT * FROM Membership; \n\nREVERT; \n\n \n\n--The following example adds a masking function to the LastName column \n\nALTER TABLE Membership \n\nALTER COLUMN LastName ADD MASKED WITH (FUNCTION = 'partial(2,\"XXX\",0)'); \n\n \n\n--The following example changes a masking function on the LastName column \n\nALTER TABLE Membership \n\nALTER COLUMN LastName varchar(100) MASKED WITH (FUNCTION = 'default()'); \n\n \n\n--Granting the UNMASK permission allows TestUser to see the data unmasked \n\nGRANT UNMASK TO TestUser; \n\nEXECUTE AS USER = 'TestUser'; \n\nSELECT * FROM Membership; \n\nREVERT; \n\n \n\n-- Removing the UNMASK permission \n\nREVOKE UNMASK TO TestUser; \n\n \n\n-- The following statement drops the mask on the LastName column \n\n-- created in the previous example \n\nALTER TABLE Membership \n\nALTER COLUMN LastName DROP MASKED; ",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
-						"poolName": "llkqqcnd5pm6cvcapocws1p1"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/Row Level Security')]",
-			"type": "Microsoft.Synapse/workspaces/sqlscripts",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"content": {
-					"query": "--Create three user accounts that will demonstrate different access  \n\nCREATE USER Ann WITH PASSWORD = '<strong_password>';\n\n-- capabilities \nCREATE LOGIN Sales3 WITH PASSWORD = 'teste@123';\n\nCREATE USER Manager WITHOUT LOGIN; \n\nCREATE USER Sales1 WITHOUT LOGIN; \n\nCREATE USER Sales3 FROM LOGIN Sales3; \n\n \n\n--Create a table to hold data \n\nCREATE TABLE Sales \n\n ( \n\n OrderID int, \n\n SalesRep sysname, \n\n Product varchar(10), \n\n Qty int \n\n ); \n\n \n\n--Insert data into table with six rows of data,  \n\n--showing three orders for each sales representative \n\nINSERT INTO Sales VALUES (1, 'Sales1', 'Valve', 5); \n\nINSERT INTO Sales VALUES (2, 'Sales1', 'Wheel', 2); \n\nINSERT INTO Sales VALUES (3, 'Sales1', 'Valve', 4); \n\nINSERT INTO Sales VALUES (4, 'Sales2', 'Bracket', 2); \n\nINSERT INTO Sales VALUES (5, 'Sales2', 'Wheel', 5); \n\nINSERT INTO Sales VALUES (6, 'Sales2', 'Seat', 5); \n\n-- View the 6 rows in the table \n\nSELECT * FROM Sales; \n\n \n\n--Grant read access on the table to each of the users \n\nGRANT SELECT ON Sales TO Manager; \n\nGRANT SELECT ON Sales TO Sales1; \n\nGRANT SELECT ON Sales TO Sales3; \n\n \n\n--Create a new schema, and an inline table-valued function. \n\n--The function returns 1 when a row in the SalesRep column is the same  \n\n--as the user executing the query (@SalesRep = USER_NAME()) or  \n\n--if the user executing the query is the Manager user  \n\n--(USER_NAME() = 'Manager') \n\nEXEC('CREATE SCHEMA Security'); \n\nGO \n\n \n\n --Select the code for creating the function and run \n\nCREATE FUNCTION Security.fn_securitypredicate(@SalesRep AS sysname) \n\n RETURNS TABLE \n\nWITH SCHEMABINDING \n\nAS \n\n RETURN SELECT 1 AS fn_securitypredicate_result \n\nWHERE @SalesRep = USER_NAME() OR USER_NAME() = 'Sales3' \n\nGO \n\n--Create a security policy adding the function as a filter predicate.  \n\n--The state must be set to ON to enable the policy. \n\nCREATE SECURITY POLICY SalesFilter \n\nADD FILTER PREDICATE Security.fn_securitypredicate(SalesRep) \n\nON dbo.Sales \n\nWITH (STATE = ON); \n\n \n\n--Allow SELECT permissions to the fn_securitypredicate function \n\nGRANT SELECT ON security.fn_securitypredicate TO Manager; \n\nGRANT SELECT ON security.fn_securitypredicate TO Sales1; \n\nGRANT SELECT ON security.fn_securitypredicate TO Sales3; \n\n \n\n--Test the filtering predicate, by selected from the  \n\n-- Sales table as each user \n\nEXECUTE AS USER = 'Sales1'; \n\nSELECT * FROM Sales; \n\nREVERT; \n\n \n\nEXECUTE AS USER = 'Sales3'; \n\nSELECT * FROM Sales; \n\nREVERT; \n\n \n\nEXECUTE AS USER = 'Manager'; \n\nSELECT * FROM Sales; \n\nREVERT; \n\n \n\n--Alter the security policy to disable the policy \n\nALTER SECURITY POLICY SalesFilter \n\nWITH (STATE = OFF); \n\n \n\n--Connect to the SQL database to clean up resources \n\nDROP USER Sales1; \n\nDROP USER Sales2; \n\nDROP USER Manager; \n\n \n\nDROP SECURITY POLICY SalesFilter; \n\nDROP TABLE Sales; \n\nDROP FUNCTION Security.fn_securitypredicate; \n\nDROP SCHEMA Security; \n\n\nGRANT SELECT ON Membership TO Sales3\n\nEXECUTE AS USER = 'Sales3'; \n\nSELECT * FROM Membership; \n\nREVERT; ",
-					"metadata": {
-						"language": "sql"
-					},
-					"currentConnection": {
-						"databaseName": "llkqqcnd5pm6cvcapocws1p1",
-						"poolName": "llkqqcnd5pm6cvcapocws1p1"
-					},
-					"resultLimit": 5000
-				},
-				"type": "SqlQuery"
-			},
 			"dependsOn": []
 		}
 	]
